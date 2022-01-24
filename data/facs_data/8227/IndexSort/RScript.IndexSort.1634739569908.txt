@@ -1,0 +1,878 @@
+
+R version 4.0.2 (2020-06-22) -- "Taking Off Again"
+Copyright (C) 2020 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> #############################################################################
+> ## Copyright (c) 2017-2021 Becton, Dickinson and Company (BD)
+> ##
+> ## License
+> ## The software is distributed under the terms of the 
+> ## Apache License, Version 2.0
+> ## hhttps://www.apache.org/licenses/LICENSE-2.0.txt
+> ## 
+> ## Disclaimer
+> ## This software and documentation come with no warranties of any kind.
+> ## This software is provided "as is" and any express or implied 
+> ## warranties, including, but not limited to, the implied warranties of
+> ## merchantability and fitness for a particular purpose are disclaimed.
+> ## In no event shall the  copyright holder be liable for any direct, 
+> ## indirect, incidental, special, exemplary, or consequential damages
+> ## (including but not limited to, procurement of substitute goods or 
+> ## services; loss of use, data or profits; or business interruption)
+> ## however caused and on any theory of liability, whether in contract,
+> ## strict liability, or tort arising in any way out of the use of this 
+> ## software.    
+> #############################################################################
+> 
+> # packages<-function(x){
+> # 	x<-as.character(match.call()[[2]])
+> # 	if (!require(x,character.only=TRUE)){
+> # 		install.packages(pkgs=x,repos="http://cran.r-project.org")
+> # 		require(x,character.only=TRUE)
+> # 	}
+> # }
+> #
+> #
+> # packages(tidyverse)
+> # packages(BiocManager)
+> # packages(pheatmap)
+> #
+> # fCorePack<-function(x){
+> # 	x<-as.character(match.call()[[2]])
+> # 	if (!require(x,character.only=TRUE)){
+> # 		BiocManager::install(x)
+> # 		require(x,character.only=TRUE)
+> # 	}
+> # }
+> #
+> # fCorePack(flowCore)
+> 
+> suppressMessages(library("flowCore"))
+> suppressMessages(library("tidyverse"))
+> 
+> debug_melody <- FALSE
+> 
+> # For debug purposes
+> sessionInfo()
+R version 4.0.2 (2020-06-22)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19042)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United Kingdom.1252 
+[2] LC_CTYPE=English_United Kingdom.1252   
+[3] LC_MONETARY=English_United Kingdom.1252
+[4] LC_NUMERIC=C                           
+[5] LC_TIME=English_United Kingdom.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] forcats_0.5.0   stringr_1.4.0   dplyr_1.0.2     purrr_0.3.4    
+ [5] readr_1.4.0     tidyr_1.1.2     tibble_3.0.3    ggplot2_3.3.2  
+ [9] tidyverse_1.3.0 flowCore_2.1.3 
+
+loaded via a namespace (and not attached):
+ [1] Rcpp_1.0.5          cellranger_1.1.0    pillar_1.4.6       
+ [4] compiler_4.0.2      cytolib_2.1.19      dbplyr_1.4.4       
+ [7] tools_4.0.2         lubridate_1.7.9     jsonlite_1.7.1     
+[10] lifecycle_0.2.0     gtable_0.3.0        pkgconfig_2.0.3    
+[13] rlang_0.4.7         reprex_0.3.0        cli_2.0.2          
+[16] rstudioapi_0.11     DBI_1.1.0           parallel_4.0.2     
+[19] haven_2.3.1         withr_2.3.0         xml2_1.3.2         
+[22] httr_1.4.2          fs_1.5.0            hms_0.5.3          
+[25] generics_0.0.2      S4Vectors_0.27.13   vctrs_0.3.4        
+[28] stats4_4.0.2        grid_4.0.2          tidyselect_1.1.0   
+[31] glue_1.4.2          Biobase_2.49.1      R6_2.4.1           
+[34] fansi_0.4.1         readxl_1.3.1        modelr_0.1.8       
+[37] RProtoBufLib_2.1.0  blob_1.2.1          magrittr_1.5       
+[40] backports_1.1.10    scales_1.1.1        matrixStats_0.56.0 
+[43] ellipsis_0.3.1      BiocGenerics_0.35.4 rvest_0.3.6        
+[46] assertthat_0.2.1    colorspace_1.4-1    stringi_1.5.3      
+[49] RcppParallel_5.0.2  munsell_0.5.0       broom_0.7.1        
+[52] crayon_1.3.4       
+> ## Just for debugging to see what FlowJo is actually giving us
+> # cat("FJ-DATA-FILE-PATH    = C:/Users/qlj874/Downloads/facs_data2/8227_INX_celltype_P3_005.fcs \n")
+> # cat("FJ-CSV-IDX-FILE-PATH =  \n")
+> # cat("FJ-CSV-OUPUT-FILE    = C:/Users/qlj874/Downloads/facs_data2/8227/IndexSort/8227_INX_celltype_P3_005.IndexSort.csv \n")
+> 
+> selectedParameters <- c("Comp-PE-A","Comp-APC-Cy7-A","Comp-PE-Cy5-A")
+> selectedParameterNames <- c("CD38","CD34","7-AAD")
+> 
+> # Strange characters in the file name can cause issues with file names being loaded into FlowJo.
+> # This block of code is simply meant to substitute out those odd characters for the purposes of using the
+> #		file name as a string in output files (such as images):
+> pluginFolderPath <- "C:/Users/qlj874/Downloads/facs_data2/8227/IndexSort"
+> fileName <- "8227_INX_celltype_P3_005"
+> 
+> # paste0(pluginFolderPath,"/",fileName)
+> 
+> "C:/Users/qlj874/Downloads/facs_data2/8227/IndexSort/8227_INX_celltype_P3_005.IndexSort.csv_CLEAN" <- "C:/Users/qlj874/Downloads/facs_data2/8227/IndexSort/8227_INX_celltype_P3_005.IndexSort.csv"
+> "C:/Users/qlj874/Downloads/facs_data2/8227/IndexSort/8227_INX_celltype_P3_005.IndexSort.csv_CLEAN" <- gsub("[:*><|$]","-","C:/Users/qlj874/Downloads/facs_data2/8227/IndexSort/8227_INX_celltype_P3_005.IndexSort.csv_CLEAN")
+> 
+> cytKey <- "Auto"
+> gVersion <- "3.0"
+> 
+> INPUT <- "C:/Users/qlj874/Downloads/facs_data2/8227/IndexSort/8227_INX_celltype_P3_005.IndexSort.csv"
+> FILE_PATH <- "C:/Users/qlj874/Downloads/facs_data2/8227_INX_celltype_P3_005.fcs"
+> 
+> CSV_INPUT <- ""
+> 
+> 
+> ###########################################################################################
+> ## Functions to print out sorting decisions from the IndexSort parameter from FACSMelody
+> ###########################################################################################
+> printIndexSortBits <- function(bytes, ind, header=FALSE) {
++     if(header) print(paste0("  IPRRRRRRRRCCCCCCCCEEEEEEEEDDDD"))
++     print(getIndexSortBits(bytes, ind))
++ }
+> 
+> ##########################################################################################
+> ## Functions to parse out sorting decisions from the IndexSort parameter from FACSMelody
+> ###########################################################################################
+> getIndexSortBits <- function(bytes, ind) {
++     myBits <- c(
++       as.numeric(rawToBits(bytes[ind+4])[8:1]),
++       as.numeric(rawToBits(bytes[ind+3])[8:1]),
++       as.numeric(rawToBits(bytes[ind+2])[8:1]),
++       as.numeric(rawToBits(bytes[ind+1])[8:1])
++     )
++     paste0(myBits, collapse="")
++ }
+> 
+> ## Returns true if event was indexed sorted and was not invalid
+> isIndexSorted <- function(bytes, ind) {
++     # The ind+4 byte is ??IP????, we need bit P to be 1 (=Sorted) and bit I to be 0 (not invalid), bit P is 2^4, bit I is 2^5 in byte (ind+4)
++     # The ind+1 byte is ????DDDD; we also need DDDD to be != 0, DDDD can be extracted by adding a mask 00001111 (i.e., 15) on byte (ind+1)
++     ((bytes[ind+4] & as.raw(16)) != 0) && ((bytes[ind+4] & as.raw(32)) == 0) && ((bytes[ind+1] & as.raw(15)) != 0)
++ }
+> 
+> ## Returns the row, 0-indexed, i.e., row A is 0, row E is 4 etc.
+> extractRow <- function(bytes, ind) {
++     # Row is in ????RRRR RRRR???? ???????? ????????
++     (16 * as.integer((bytes[ind+4] & as.raw(15)))) + ## Get bottom 4 bits from the top byte and shift those 4 bits left
++     (as.integer(bytes[ind+3] & as.raw(240)) / 16)    ## Get top 4 bits from the second byte and shift those 4 bits right; add those two
++ }
+> 
+> ## Returns the column, 0-indexed, i.e., row 01 is 0, row 12 is 11 etc.
+> extractCol <- function(bytes, ind) {
++     # Col is in ???????? ????CCCC CCCC???? ????????
++     (16 * as.integer((bytes[ind+3] & as.raw(15)))) + ## Get bottom 4 bits from the second byte and shift those 4 bits left
++     (as.integer(bytes[ind+2] & as.raw(240)) / 16)    ## Get top 4 bits from the third byte and shift those 4 bits right; add those two
++ }
+> 
+> ## Returns the well as c(row,col) 0-indexed, e.g., well E12 is returned as c(4,11)
+> extractWell <- function(bytes, ind) {
++     c(
++     # Row is in ????RRRR RRRR???? ???????? ????????
++     (16 * as.integer((bytes[ind+4] & as.raw(15)))) + ## Get bottom 4 bits from the top byte and shift those 4 bits left
++     (as.integer(bytes[ind+3] & as.raw(240)) / 16)    ## Get top 4 bits from the second byte and shift those 4 bits right; add those two
++     ,
++     (16 * as.integer((bytes[ind+3] & as.raw(15)))) + ## Get bottom 4 bits from the second byte and shift those 4 bits left
++     (as.integer(bytes[ind+2] & as.raw(240)) / 16)    ## Get top 4 bits from the third byte and shift those 4 bits right; add those two
++     )
++ }
+> 
+> ## Returns the well as c(row,col) 1-indexed, e.g., well E12 is returned as c(5,12). c(0,0) means not index-sorted
+> extractWell1 <- function(bytes, ind) {
++     if(isIndexSorted(bytes, ind)) {
++         extractWell(bytes, ind) + c(1,1)
++     } else {
++         c(0,0)
++     }
++ }
+> 
+> ## Assumes input as 0-indexed, e.g., well E12 is c(4,11)
+> getWellName <- function(x) {
++     if (x[1] < 26) {
++         # Single character for row
++         if(x[2] < 9) paste0(LETTERS[x[1]+1], 0, x[2]+1)
++         else paste0(LETTERS[x[1]+1], x[2]+1)
++     } else {
++         # Two characters for row
++         if(x[2] < 9) paste0(LETTERS[as.integer(x[1]/26)], LETTERS[x[1]%%26+1], 0, x[2]+1)
++         else paste0(LETTERS[as.integer(x[1]/26)], LETTERS[x[1]%%26+1], x[2]+1)
++     }
++ }
+> 
+> ## Assumes input as 1-indexed, e.g., well E12 is c(5,12)
+> getWellName1 <- function(x) {
++     if(x[1] > 0 || x[2] > 0) {
++         getWellName(x - c(1,1))
++     } else {
++         "NA"
++     }
++ }
+> 
+> ## Read the FCS file, find the IndexSort parameter, extract sorting decisions from that parameter
+> ## Return a data frame with 2 columns: IdxRow and IdxCol; indexes from 1, i.e., well E12 is c(5,12). c(0,0) means "not index sorted"
+> ## Note that this isn't using flowCore's read.FCS since we need access to the raw bytes (bits) in order to extract sorting details from the IndexSort parameter
+> ## Sorting details are encoded as follows
+> ## ??IPRRRRRRRRCCCCCCCCEEEEEEEEDDDD
+> ## Where
+> ##   ?: bit not in use
+> ##   I: invalid event; this bit needs to be 0 for the event to be sorted
+> ##   P: event sorted; this needs to be 1 for the event to be sorted
+> ##   R: row; this is the row number; 8 bits, 0-indexed rows.
+> ##   E: event; 8 bits, irrelevant for our purposes
+> ##   D: destination; 4 bits, needs to be != 0
+> read.IndexSort <- function (filename) {
++     if(!is.character(filename) ||  length(filename)!=1)
++     stop("'filename' must be character scalar")
++     if(!file.exists(filename))
++     stop(paste("'", filename, "' is not a valid file", sep=""))
++     con <- file(filename, open="rb")
++     on.exit(close(con))
++     
++     emptyValue <- TRUE
++     offsets <- flowCore:::findOffsets(con, emptyValue=emptyValue, dataset = NULL)
++     txt <- flowCore:::readFCStext(con, offsets, emptyValue=emptyValue)
++     
++     nrpar <- as.integer(flowCore:::readFCSgetPar(txt, "$PAR"))
++     nrowTotal <- as.integer(flowCore:::readFCSgetPar(txt, "$TOT"))
++     
++     bitwidth_vec <- as.integer(flowCore:::readFCSgetPar(txt, paste("$P", 1:nrpar, "B", sep="")))
++     bitwidth <- unique(bitwidth_vec)
++     if (length(bitwidth) > 1) {
++         stop(paste("Multiple bit-widths not supported.", sep=""))
++     }
++     
++     parName_vec <- as.character(flowCore:::readFCSgetPar(txt, paste("$P", 1:nrpar, "N", sep="")))
++     indexSortParIndex <- which(parName_vec == "IndexSort")
++     if (length(indexSortParIndex) != 1) {
++         stop(paste("The IndexSort parameter not found in the file", sep=""))
++     }
++     
++     seek(con, offsets["datastart"])
++     nBytes <- as.integer(offsets["dataend"] - offsets["datastart"] + 1)
++     bytes <- readBin(con=con, what="raw", n=nBytes, size = 1)
++     bytesPerRow <- nrpar * bitwidth / 8;
++     
++     if (debug_melody) {
++         nSorted <- 0
++         nNotSorted <- 0
++         print(paste0("Debug information to verify sort details for FACSMelody:"))
++         print(paste0("Data segment start offset: ", offsets["datastart"]))
++         print(paste0("Data segment end offset:   ", offsets["dataend"], " (length ", nBytes, " bytes)"))
++         print(paste0("Number of events:          ", nrowTotal))
++         print(paste0("Number of parameters:      ", nrpar))
++         print(paste0("Bytes per event:           ", bytesPerRow))
++         print(paste0("IndexSort parameter index: ", indexSortParIndex))
++         print(paste0("====================================================="))
++         print(paste0("Bit header:     ??IPRRRRRRRRCCCCCCCCEEEEEEEEDDDD"))
++         for (i in 1:nrowTotal) {
++             ind <- (i-1) * bytesPerRow + bitwidth / 8 * (indexSortParIndex - 1)
++             print(paste0("IndexSort bits: ", getIndexSortBits(bytes, ind), " 0x", as.raw(bytes[ind+4]), as.raw(bytes[ind+3]), as.raw(bytes[ind+2]), as.raw(bytes[ind+1]), " for event ", i, ". => Event sorted in well ", getWellName1(extractWell1(bytes, ind))))
++             if (isIndexSorted(bytes, ind)) {
++                 nSorted <- nSorted + 1;
++             } else {
++                 nNotSorted <- nNotSorted + 1;
++             }
++         }
++         print(paste0("====================================================="))
++         print(paste0("Total sorted events: ", nSorted, " (", 100*nSorted/(nSorted+nNotSorted),"%); not sorted events: ", nNotSorted, " (", 100*nNotSorted/(nSorted+nNotSorted),"%)"))
++     }
++     
++     ## Note, it's important to write this as apply as opposed to a for loop over the events; the performance difference is 1.2 seconds as opposed to 2.7 minutes on a file with 140,000 cells
++     m <- matrix(1:nrowTotal, ncol = 1, nrow = nrowTotal)
++     m[,1] <- apply(m, 1, function(i) {(i-1) * bytesPerRow + bitwidth / 8 * (indexSortParIndex - 1)})
++     m <- t(apply(m, 1, function(ind) { extractWell1(bytes, ind) }))
++     data.frame("IdxRow" = m[,1], "IdxCol" = m[,2], stringsAsFactors=FALSE)
++ }
+> 
+> ###############################################################################################
+> ## END of functions to parse out sorting decisions from the IndexSort parameter from FACSMelody
+> ###############################################################################################
+> 
+> 
+> fileName <- gsub("[:*><|$]", "-", fileName)
+> 
+> stopAndReturnError <- function(message, ...) {
++   cat(message, file = paste0(INPUT, "_err.txt"))
++   stop(message, ...)
++ }
+> 
+> ##### Inputs
+> # Input fcs
+> inputFCS <-
++   read.FCS(FILE_PATH,
++            emptyValue = FALSE,
++            truncate_max_range = FALSE)
+> ## Error message if unable to read the fcs file correctly
+> if (!nrow(inputFCS) > 0)
++   stopAndReturnError("Unable to read the input FCS file correctly.", call. = FALSE)
+> 
+> ## Check the data before thinking about applying compensation:
+> # fCorePack('flowViz')
+> # install.packages("latticeExtra")
+> # library(flowViz)
+> # E <- exprs(inputFCS)
+> # plot(E[,5], E[,6],
+> #      pch = ".",
+> #      xlim=c(0.1,1000),
+> #      ylim=c(0.1,1000),
+> #      main="A Goll Darn Plot", log="xy"
+> #     )
+> 
+> ## If compensation matrix is available, perform compensation:
+> # X <- inputFCS
+> compMe <- function(x) {
++   x <- inputFCS
++   comp_list <- spillover(x)
++   comp_list
++   comp <- comp_list[[1]]
++   x_comp <- compensate(x, comp)
++   x_comp
++   x <- x_comp
++   return(x)
++ }
+> 
+> if (!is.null(inputFCS@description[["SPILL"]])) {
++   inputFCS <- compMe(inputFCS)
++ } else if (!is.null(inputFCS@description[["$SPILLOVER"]])) {
++   spillage <- inputFCS@description[["$SPILLOVER"]]
++   inputFCS@description[["SPILL"]] <- spillage
++   inputFCS <- compMe(inputFCS)
++ }
+> 
+> ## Check that comp was applied nicely:
+> # E <- exprs(inputFCS)
+> # plot(E[,5], E[,6],
+> #      pch = ".",
+> #      xlim=c(0.1,1000),
+> #      ylim=c(0.1,1000),
+> #      # xlab="FSC-A",
+> #      # ylab="SSC-A",
+> #      main="A Goll Darn Plot", log="xy"
+> # )
+> 
+> ##### Sanity Checks
+> # Currently supported machines
+> supCYT <- c(
++   "FACSAriaIII",
++   "FACSAria Fusion (FACSAriaIII)",
++   "FACSymphony S6",
++   "FACSMelody",
++   "Influx System (USB)",
++   "FACSJazz System (USB)",
++   "BD FACSAriaII",
++   "BD FACSAria",
++   "FACSVulcan"
++ )
+> #		"Astrios")
+> 
+> # Check $CYT
+> ## Get rid of the BD for some of those or else what comes from the UI does not match what's in $CYT etc. Sort of hacky, but should do the trick
+> ## TODO Clean this up! If the map vs human map in Java is used well, this should not be needed!
+> if (cytKey == "BD FACSymphony S6")
++   cytKey <- "FACSymphony S6"
+> if (cytKey == "BD FACSMelody")
++   cytKey <- "FACSMelody"
+> if (cytKey == "BD Influx System (USB)")
++   cytKey <- "Influx System (USB)"
+> if (cytKey == "BD FACSJazz System (USB)")
++   cytKey <- "FACSJazz System (USB)"
+> if (cytKey == "BD FACSVulcan")
++   cytKey <- "FACSVulcan"
+> 
+> RowNumToRowLetter <- function(x) {
++   y <- x
++   for (i in 1:length(x))
++     if ((x[i] >= 1) && (x[i] <= 26))
++       y[i] <- rawToChar(as.raw(x[i] + 64))
++     else
++       y[i] <- NA
++     y
++ }
+> 
+> ## If auto-selection then take it from $CYT
+> if (cytKey == "Auto") {
++   cytKey <- inputFCS@description$`$CYT`
++   if (((length(cytKey) == 0) ||
++        (nchar(cytKey) == 0)) &&
++       "Row" %in% colnames(inputFCS) && "Column" %in% colnames(inputFCS))
++     cytKey <- "FACSymphony S6"
++ 
++   ## Error message if input FCS file doesn't specify the $CYT
++   if (length(cytKey) == 0)
++     stopAndReturnError("The input FCS file doesn't specify the $CYT keyword.", call. = FALSE)
++ 
++   ## This removes "BD " prefix, i.e., it turns "BD FACSMelody" into "FACSMelody",
++   ## that is because it seems that sometimes, the $CYT is BD FACSMelody and sometimes just FACSMelody
++   ## This trick should make it work all the time since we have also removed the "BD " prefixes from supCYT.
++   x1 = unlist(strsplit(cytKey, split = 'BD ', fixed = TRUE))
++   if (length(x1) > 1)
++     cytKey <- x1[2]
++ 
++   ## Error message if cell sorter is not currently supported
++   if (!(cytKey %in% supCYT))
++     stopAndReturnError("This cell sorter is not currently supported.", call. = FALSE)
++ }
+> 
+> ##### BD FACSAriaIII, FACSAria Fusion & S6
+> if (cytKey %in% supCYT[1:3]) {
++   # Find the index sorting locations
++   if ("Row" %in% colnames(inputFCS) &&
++       "Column" %in% colnames(inputFCS)) {
++     # Use Row and Column
++     colnames(inputFCS@exprs)[which(colnames(inputFCS@exprs) == "Row")] <-
++       "IdxRow"
++     colnames(inputFCS@exprs)[which(colnames(inputFCS@exprs) == "Column")] <-
++       "IdxCol"
++ 
++     results <- data.frame(inputFCS@exprs[, c("IdxRow", "IdxCol")]) %>%
++       mutate(IdxRow, IdxRow = RowNumToRowLetter(IdxRow)) %>%
++       mutate(IdxCol, IdxCol = formatC((as.numeric(IdxCol)), width = 2, flag = 0))
++     perCell <-
++       cbind(data.frame(inputFCS@exprs[, setdiff(colnames(inputFCS@exprs), c("IdxRow", "IdxCol", "Time"))]), results) %>%
++       mutate(Well = paste0(IdxRow, IdxCol))
++ 
++   } else {
++     # Use INDEX SORTING LOCATIONS
++     indSor <- data.frame(keyword = names(inputFCS@description)) %>%
++       rownames_to_column() %>%
++       filter(grepl("INDEX SORTING LOCATIONS", keyword)) %>%
++       extract(keyword,
++               c("keyword", "position"),
++               "(INDEX SORTING LOCATIONS)_(.*)") %>%
++       mutate_at(.vars = vars(rowname, position), as.numeric) %>%
++       arrange(position) %>%
++       select(rowname) %>%
++       unlist() %>%
++       sapply(., function(x)
++         unlist(inputFCS@description[[x]])) %>%
++       paste0 %>%
++       str_split(";") %>%
++       unlist
++     ## Error message if unable to find the sorting locations
++     if (length(indSor) == 0)
++       stopAndReturnError("Unable to find the index sorting locations.", call. = FALSE)
++ 
++     # Generate results
++     results <-
++       data.frame(IdxRow = as.integer(gsub(
++         "([0-9]?[0-9]),([0-9]?[0-9])", "\\1", indSor[indSor != ""]
++       )),
++       IdxCol = as.integer(gsub(
++         "([0-9]?[0-9]),([0-9]?[0-9])", "\\2", indSor[indSor != ""]
++       ))) %>%
++       mutate(IdxRow, IdxRow = rawToChar(as.raw(65 + as.integer(.[, "IdxRow"])), multiple = TRUE)) %>%
++       mutate(IdxCol, IdxCol = formatC((IdxCol + 1), width = 2, flag = 0))
++ 
++ 
++     #############################
++     #### Name Columns Nicely ####
++     #############################
++ 
++     colser <- colnames(inputFCS@exprs)
++     colser01 <- gsub("/", "_", colser)
++     dfdf <- data.frame(inputFCS@exprs)
++     colnames(dfdf) <- colser01
++ 
++     #################
++     #################
++ 
++     # Generate perCell
++     perCell <- cbind(dfdf, results) %>%
++       mutate(Well = paste0(IdxRow, IdxCol))
++   }
++ 
++   ##### BD FACSMelody
++ } else if (cytKey %in% supCYT[4] || cytKey %in% supCYT[9]) {
++   
++   if ("IndexSort" %in% colnames(inputFCS)) {
++     ## New code for FACSMelody as of 2021-04 by Josef: extract sorting information from the FCS file (the IndexSort parameter) as opposed to the CSV file
++     results <- read.IndexSort(FILE_PATH) %>%
++       mutate(IdxRow, IdxRow = RowNumToRowLetter(IdxRow)) %>%
++       mutate(IdxCol, IdxCol = formatC((as.numeric(IdxCol)), width = 2, flag = 0))
++     
++     perCell <- cbind(data.frame(inputFCS@exprs[, setdiff(colnames(inputFCS@exprs), c("IdxRow", "IdxCol", "Time"))]), results) %>%
++       mutate(Well = paste0(IdxRow, IdxCol))
++     
++   } else {
++     ## Old code for FACSMelody, this is inactive at this point (CSV_INPUT isn't passed) but keeping in case we need to restore the CSV functinality.
++     stopAndReturnError("The IndexSort parameter not found in the input FCS file; the IndexSort is required in order to extract sorting information from FACSMelody FCS files.", call. = FALSE)
++     
++     # Input csv
++     inputCSV <- read.csv(CSV_INPUT)
++     ## Error message if unable to read the fcs file correctly
++     if (!nrow(inputCSV) > 0)
++       stopAndReturnError("Unable to read the input CSV file correctly.", call. = FALSE)
++ 
++     # Correct csv
++     ## Remove header
++     # inputCSV <- read.csv(CSV_INPUT, skip = which(inputCSV[, 1] == "Well")) %>%
++     #   mutate_at(vars(FSC.A:SSC.W), round)
++ 
++     # Correct csv
++     ## Remove header
++     inputCSV <- read.csv(CSV_INPUT, skip = which(inputCSV[, 1] == "Well"), check.names = F) %>%
++     mutate_at(vars(`FSC-A`:`SSC-W`), round)
++ 
++     #############################
++     #### Name Columns Nicely ####
++     #############################
++ 
++     colser <- colnames(inputFCS@exprs)
++     colser01 <- gsub("/", "_", colser)
++     dfdf <- data.frame(inputFCS@exprs)
++     colnames(dfdf) <- colser01
++ 
++     #################
++     #################
++ 
++     # Generate perCell
++     perCell <- tryCatch({
++       round(dfdf) %>%
++         select(Time, matches("[FS]SC.[AHW]")) %>% # This will fails if Time isn't there!
++         select(matches("[FS]SC.[AHW]")) %>% # This will fails if Time isn't there!
++         # plyr::join(., inputCSV) %>%
++         merge(., inputCSV, all.x = TRUE, sort = F) %>%
++         mutate(Well, IdxRow = gsub("([[:alpha:]])([0-9][0-9])", "\\1", Well)) %>%
++         mutate(Well, IdxCol = gsub("([[:alpha:]])([0-9][0-9])", "\\2", Well))
++     }, warning = function(w) {
++ 
++     }, error = function(e) {
++       round(dfdf) %>%
++         # It may have failed because of this line... # select(Time, matches("[FS]SC.[AHW]")) %>%
++         select(matches("[FS]SC.[AHW]")) %>% # This will fails if Time isn't there!
++         merge(., inputCSV, all.x = TRUE, sort = F) %>%
++         # plyr::join(., inputCSV) %>%
++         mutate(Well, IdxRow = gsub("([[:alpha:]])([0-9][0-9])", "\\1", Well)) %>%
++         mutate(Well, IdxCol = gsub("([[:alpha:]])([0-9][0-9])", "\\2", Well))
++      }, finally  = {
++     })
++ 
++     # Generate results
++     results <- perCell %>%
++       select(IdxRow, IdxCol)
++ 
++     # Correct perCell
++     perCell <- perCell %>%
++       filter(Well != "NA") %>%
++       arrange(Well)
++       
++   } ##
++ 
++     ## FACSJazz currently not supported!!
++     ##### BD Influx System, (BD FACSJazz System (USB))
++ } else if (cytKey %in% supCYT[5:6]) {
++   # Find the index sorting positions
++   indSor <-
++     rev(grep("INDEXSORTPOSITIONS", names(inputFCS@description))) %>%
++     sapply(., function(x)
++       unlist(inputFCS@description[[x]])) %>%
++     paste(collapse = "") %>%
++     str_split(",") %>%
++     unlist %>%
++     matrix(ncol = 3, byrow = TRUE)
++   ## Error message if unable to find the sorting positions
++   if (length(indSor) == 0)
++     stopAndReturnError("Unable to find the index sorting positions.", call. = FALSE)
++ 
++   # Round Tray.X and Tray.Y
++   trayXY <- data.frame(
++     Well = indSor[, 1],
++     `Tray X` = indSor[, 2] <- round(as.numeric(indSor[, 2]) / 100),
++     `Tray Y` = indSor[, 3] <- round(as.numeric(indSor[, 3]) / 100),
++     `Sort Result Bits` = 32769
++   )
++ 
++   colnames(trayXY) <-
++     c("Well", "Tray X", "Tray Y", "Sort Result Bits")
++ 
++   #############################
++   #### Name Columns Nicely ####
++   #############################
++ 
++   colser <- colnames(inputFCS@exprs)
++   colser01 <- gsub("/", "_", colser)
++   dfdf <- data.frame(inputFCS@exprs)
++   colnames(dfdf) <- colser01
++ 
++   #################
++   #################
++ 
++   # Generate perCell
++   perCell <- dfdf %>%
++     mutate(`Tray X` = round(`Tray X` / 100),
++            `Tray Y` = round(`Tray Y` / 100)) %>%
++     plyr::join(., trayXY) %>%
++     # merge(., trayXY, all.x = TRUE, sort = F) %>%
++     mutate(
++       IdxRow = gsub("([[:alpha:]])([0-9]?[0-9])", "\\1", Well),
++       IdxCol = gsub("([[:alpha:]])([0-9]?[0-9])", "\\2", Well)
++     ) %>%
++     mutate(IdxCol, IdxCol = formatC((as.numeric(IdxCol)), width = 2, flag = 0))
++ 
++   # Generate results
++   results <- perCell %>%
++     select(IdxRow, IdxCol)
++ 
++   # Correct perCell
++   perCell <- perCell %>%
++     filter(IdxRow != "NA") %>%
++     mutate(Well = paste0(IdxRow, IdxCol)) %>%
++     arrange(Well)
++   ## Added file types from Dr.Dr. Freier (Aug2019):
++ 
++   ## BD FACS Aria
++ } else if (cytKey %in% supCYT[7:8]) {
++   # 1.1. Generate list
++   indSor <-
++     rev(grep("INDEX SORTING LOCATIONS", names(inputFCS@description))) %>%
++     # indSor <- rev(grep("INDEX SORTING LOCATIONS", names(data@description))) %>%
++     sapply(., function(x)
++       unlist(inputFCS@description[[x]])) %>%
++     paste0 %>%
++     str_split(";") %>%
++     unlist
++ 
++   #############################
++   #### Name Columns Nicely ####
++   #############################
++ 
++   colser <- colnames(inputFCS@exprs)
++   colser01 <- gsub("/", "_", colser)
++   dfdf <- data.frame(inputFCS@exprs)
++   colnames(dfdf) <- colser01
++ 
++   #################
++   #################
++ 
++   # 1.2. Generate result
++   results <-
++     data.frame(IdxRow = as.integer(gsub(
++       "([0-9]?[0-9]),([0-9]?[0-9])", "\\1", indSor[indSor != ""]
++     )),
++     IdxCol = as.integer(gsub(
++       "([0-9]?[0-9]),([0-9]?[0-9])", "\\2", indSor[indSor != ""]
++     ))) %>%
++     mutate(IdxRow, IdxRow = rawToChar(as.raw(65 + as.integer(.[, "IdxRow"])), multiple = TRUE)) %>%
++     mutate(IdxCol, IdxCol = formatC((IdxCol + 1), width = 2, flag = 0)) %>%
++     cbind(., dfdf)
++ 
++   # Generate perCell
++   perCell <- cbind(results) %>%
++     mutate(Well = paste0(IdxRow, IdxCol))
++ 
++   # perCell <- cbind(data.frame(inputFCS@exprs), result) %>%
++   #   mutate(Well = paste0(IdxRow, IdxCol))
++ 
++ 
++   #} else if (cytKey %in% supCYT[9]) {
++ 
++   ##### Astrios
++   #    } else if (cytKey %in% supCYT[9]) {
++   #      # Generate results
++   #      result <- data.frame(inputFCS@exprs) %>%
++   #        mutate(bits   = lapply(Sort.Classifier, function(x) as.numeric(intToBits(x))),
++   #               IdxRow = sapply(bits, function(x) sum(x[27], x[28]*2, x[29]*4 + x[30]*8 + x[31]*16 + x[32]*32)),
++   #               IdxCol = sapply(bits, function(x) sum(x[21], x[22]*2, x[23]*4 + x[24]*8 + x[25]*16 + x[26]*32))) %>%
++   #        mutate(IdxRow = rawToChar(as.raw(64 + as.integer(.[, "IdxRow"])), multiple = TRUE)) %>%
++   #        mutate(IdxCol = formatC((IdxCol), width = 2, flag = 0)) %>%
++   #        mutate(IdxRow = ifelse(IdxRow == "@", NA_real_,  IdxRow)) %>%
++   #        mutate(IdxCol = ifelse(IdxCol == "00", NA_real_,  IdxCol)) %>%
++   #        select(IdxRow, IdxCol, everything(), -bits)
++ 
++ }
+> 
+> 
+> ##### Outputs
+> # Generate perWell
+> perWell <- perCell %>%
++   group_by(Well, IdxRow, IdxCol) %>%
++   mutate(nbrCell = length(Well)) %>%
++   summarise_if(is.numeric, median)
+> 
+> # Plate template
+> plateX <- ifelse(max(as.numeric(perWell$IdxCol)) %in% c(1:3), 3,
++                  ifelse(max(as.numeric(perWell$IdxCol)) %in% c(4:6), 6,
++                         ifelse(
++                           max(as.numeric(perWell$IdxCol)) %in% c(7:8), 8,
++                           ifelse(max(as.numeric(perWell$IdxCol)) %in% c(9:12), 12, 24)
++                         )))
+> plateY <-
++   ifelse(plateX == 3, 2, ifelse(plateX == 6, 4, ifelse(plateX == 8, 6, ifelse(plateX == 12, 8, 16))))
+> plateTem <-
++   data.frame(IdxRow = unlist(lapply(LETTERS[1:plateY], function(x)
++     rep(x, plateX))),
++     IdxCol = rep(1:plateX, plateY))
+> 
+> # Write csv
+> # write.csv(results,
+> #           file = INPUT,
+> #           row.names = FALSE,
+> #           quote = FALSE)
+> newresults <- results
+> newresults[newresults=="NA"] <- 0
+> write.csv(newresults,
++           file = INPUT,
++           row.names = FALSE,
++           quote = FALSE
++ )
+> write.csv(
++   perCell,
++   file = paste0(INPUT, "_perCell.csv"),
++   row.names = FALSE,
++   quote = FALSE
++ )
+> write.csv(
++   perWell,
++   file = paste0(INPUT, "_perWell.csv"),
++   row.names = FALSE,
++   quote = FALSE
++ )
+> 
+> # Plot plate
+> png(
++   file = paste0(paste0(pluginFolderPath, "/", fileName), ".png"),
++   bg = "transparent",
++   width = 800,
++   height = 520,
++   units = "px",
++   pointsize = 24
++ )
+> perWell %>%
++   ggplot(aes(y = IdxRow, x = as.integer(IdxCol))) +
++   geom_point(shape = 1, size = 12, data = plateTem) +
++   geom_point(aes(colour = nbrCell), size = 10, alpha = .75) +
++   geom_text(aes(label = nbrCell, alpha = .25)) +
++   scale_y_discrete(limits = rev(LETTERS[1:plateY])) +
++   scale_x_continuous(breaks = seq(1, plateX)) +
++   theme_bw() +
++   theme(legend.position = "none",
++         panel.grid.minor = element_blank()) +
++   labs(
++     x = NULL,
++     y = NULL,
++     title = "Number of Cells per Well",
++     caption = paste0("indexSort ", "gVersion")
++   )
+> 
+> pInput <- gsub("Comp-", "", selectedParameters)
+> pInput4 <- pInput
+> 
+> print(paste0(colnames(perWell)))
+ [1] "Well"      "IdxRow"    "IdxCol"    "FSC-A"     "FSC-W"     "FSC-H"    
+ [7] "SSC-A"     "SSC-W"     "SSC-H"     "PE-A"      "APC-Cy7-A" "PE-Cy5-A" 
+[13] "Time"      "nbrCell"  
+> 
+> # Plot plate w/ color
+> for (i in 1:length(selectedParameters)) {
++ 
++   if(selectedParameterNames[i] != "")
++     ParameterName <- selectedParameterNames[i]
++   else {
++     ParameterName <- selectedParameters[i]
++   }
++ 
++   if (pInput4[i] != "Row" &&
++       pInput4[i] != "Column" &&  pInput4[i] != "Time") {
++     
++     F.I. <- tryCatch(
++     {
++         data.matrix(perWell[pInput4[i]])
++     }, error = function(x) {
++         NULL
++     })
++     
++     if (is.null(F.I.) && (grepl("*", pInput4[i], fixed = TRUE) || (grepl("-", pInput4[i], fixed = TRUE)) || (grepl(" ", pInput4[i], fixed = TRUE)) || (grepl("(", pInput4[i], fixed = TRUE)) || (grepl(")", pInput4[i], fixed = TRUE)) )) {
++         # Try replacing "*" with ".X" and "-" with "."
++         pInput4[i] <- str_replace_all(pInput4[i], "[*]", "X.")
++         pInput4[i] <- str_replace_all(pInput4[i], "[-]", ".")
++         pInput4[i] <- str_replace_all(pInput4[i], "[ ]", ".")
++         pInput4[i] <- str_replace_all(pInput4[i], "[(]", ".")
++         pInput4[i] <- str_replace_all(pInput4[i], "[)]", ".")
++ 
++         F.I. <- tryCatch(
++         {
++             data.matrix(perWell[pInput4[i]])
++         }, error = function(x) {
++             NULL
++         })
++     }
++     
++     if (is.null(F.I.)) {
++         print(paste0(pInput4[i], " not found. Cannot make heatmap for this parameter. Parameters available."))
++         print(paste0("- ", colnames(perWell)))
++     } else {
++     
++       meeed <- max(F.I.)/2 # median(F.I.)
++       png(
++         file = paste0(
++           paste0(pluginFolderPath, "/", fileName),
++           "_MFI_",
++           str_replace_all(ParameterName, "[*]", "."),
++           ".png"
++         ),
++         bg = "transparent",
++         width = 800,
++         height = 520,
++         units = "px",
++         pointsize = 24
++       )
++       print(
++         perWell %>%
++           ggplot(aes(y = IdxRow, x = as.integer(IdxCol))) +
++           geom_point(
++             shape = 1,
++             size = 12,
++             data = plateTem
++           ) +
++           geom_point(aes(colour = F.I.), size = 10, alpha = .75) +
++           geom_text(aes(label = F.I., alpha = .25), size = 0) +
++           scale_y_discrete(limits = rev(LETTERS[1:plateY])) +
++           scale_x_continuous(breaks = seq(1, plateX)) +
++           scale_colour_gradient2(low = "black", mid = "purple", high = "yellow", midpoint = meeed) +
++           theme_bw() +
++           theme(
++             legend.position = "right",
++             panel.grid.minor = element_blank()
++           ) +
++           labs(
++             x = NULL,
++             y = NULL,
++             title = paste("MFI", ParameterName),
++             subtitle = paste0("Median Fluorescence ", ParameterName, " Per Well")
++           )
++       )
++       dev.off()
++     }
++     
++   }
++ }
+> 
+> writeLines("Fin")
+Fin
+> 
+> proc.time()
+   user  system elapsed 
+   9.90    5.01   20.71 
+Error in gzfile(file, "wb") : cannot open the connection
+Calls: sys.save.image -> save.image -> save -> gzfile
+In addition: Warning message:
+In gzfile(file, "wb") :
+  cannot open compressed file '.RDataTmp', probable reason 'Permission denied'
+Execution halted
+Warning message:
+In file.remove(outfile) :
+  cannot remove file '.RDataTmp', reason 'No such file or directory'

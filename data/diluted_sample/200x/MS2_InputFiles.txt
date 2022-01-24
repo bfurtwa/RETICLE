@@ -1,0 +1,7 @@
+"Input Files Workflow ID"	"Input Files Workflow Level"	"Input Files "	"File ID"	"File Name"	"Creation Date"	"RT Range in min"	"Instrument Name"	"Software Revision"
+"-10635"	"1"	"11796"	"F1"	"C:\DATA\Benjamin\RETICLE\raw\MS2\20210316_HB_BF_U3000_uPAC_50cm_precol_114min_TMTpro2_150nlmin_2CV_scMS_MS2_500ms_50x200c.raw"	"03/17/2021 10:14:34"	"0.00 - 114.00"	"Orbitrap Eclipse"	"3.4.3072.18"
+"-10635"	"1"	"11797"	"F2"	"C:\DATA\Benjamin\RETICLE\raw\MS2\20210316_HB_BF_U3000_uPAC_50cm_precol_114min_TMTpro2_150nlmin_2CV_scMS_MS2_750ms_50x200c.raw"	"03/18/2021 06:33:14"	"0.00 - 114.01"	"Orbitrap Eclipse"	"3.4.3072.18"
+"-10635"	"1"	"11798"	"F3"	"C:\DATA\Benjamin\RETICLE\raw\MS2\20210316_HB_BF_U3000_uPAC_50cm_precol_114min_TMTpro2_150nlmin_2CV_scMS_MS2_500ms_50x200c_2.raw"	"03/22/2021 04:01:21"	"0.00 - 114.00"	"Orbitrap Eclipse"	"3.4.3072.18"
+"-10635"	"1"	"11799"	"F4"	"C:\DATA\Benjamin\RETICLE\raw\MS2\20210316_HB_BF_U3000_uPAC_50cm_precol_114min_TMTpro2_150nlmin_2CV_scMS_MS2_750ms_50x200c_2.raw"	"03/23/2021 02:22:20"	"0.00 - 114.00"	"Orbitrap Eclipse"	"3.4.3072.18"
+"-10635"	"1"	"11800"	"F5"	"C:\DATA\Benjamin\RETICLE\raw\MS2\20210316_HB_BF_U3000_uPAC_50cm_precol_114min_TMTpro2_150nlmin_2CV_scMS_MS2_500ms_50x200c_3.raw"	"03/23/2021 20:38:53"	"0.00 - 114.00"	"Orbitrap Eclipse"	"3.4.3072.18"
+"-10635"	"1"	"11801"	"F6"	"C:\DATA\Benjamin\RETICLE\raw\MS2\20210316_HB_BF_U3000_uPAC_50cm_precol_114min_TMTpro2_150nlmin_2CV_scMS_MS2_750ms_50x200c_3.raw"	"03/26/2021 01:28:53"	"0.00 - 114.01"	"Orbitrap Eclipse"	"3.4.3072.18"

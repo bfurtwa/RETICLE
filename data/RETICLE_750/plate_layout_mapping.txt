@@ -1,0 +1,4 @@
+Plate	Sort Layout	Label Layout	Sample Layout	Facs Data
+1	sort_layout.txt	balanced_channels_0.txt	sample_layout.txt	facs_data_P1.txt
+2	sort_layout.txt	balanced_channels_1.txt	sample_layout.txt	facs_data_P2.txt
+3	sort_layout.txt	balanced_channels_2.txt	sample_layout.txt	facs_data_P3.txt
